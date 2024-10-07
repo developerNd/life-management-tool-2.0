@@ -92,10 +92,11 @@ const Task: React.FC<TaskProps> = ({ task, members, onUpdate, onDelete, onAddSub
         } else {
           // Task hasn't started yet
           const timeToStart = differenceInSeconds(startTime, now);
-          const hours = Math.floor(timeToStart / 3600);
+          const days = Math.floor(timeToStart / 86400); // Calculate days
+          const hours = Math.floor((timeToStart % 86400) / 3600);
           const minutes = Math.floor((timeToStart % 3600) / 60);
           const seconds = timeToStart % 60;
-          setCountdown(`Starts in: ${hours}h ${minutes}m ${seconds}s`);
+          setCountdown(`Starts in: ${days}d ${hours}h ${minutes}m ${seconds}s`);
         }
       }
     };
