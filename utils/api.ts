@@ -2,7 +2,7 @@ import axios from 'axios';
 import https from 'https'; // Import https for HTTPS agent
 
 // const API_URL = 'http://127.0.0.1:8000/api'; // Make sure this matches your Laravel server URL
-const API_URL = 'https://team.aiwhatsapp.in/api'; // Make sure this matches your Laravel server URL
+const API_URL = 'https://teamapi.aiwhatsapp.in/api'; // Make sure this matches your Laravel server URL
 
 const api = axios.create({
   baseURL: API_URL,
