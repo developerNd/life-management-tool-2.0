@@ -515,46 +515,57 @@ const Task: React.FC<TaskProps> = ({ task, members, onUpdate, onDelete, onAddSub
   };
 
   const startWorkTimer = () => {
-    setPomodoroTime(pomodoroSettings.workTime);
+    const workTime = pomodoroSettings.workTime;
+    setPomodoroTime(workTime);
     setPomodoroSettings(prev => ({ ...prev, isBreak: false }));
     if (pomodoroTimer) clearInterval(pomodoroTimer);
+    const startTime = Date.now();
+    const endTime = startTime + workTime * 1000;
+    
     const timer = setInterval(() => {
-      setPomodoroTime((prevTime) => {
-        if (prevTime <= 1) {
-          clearInterval(timer);
-          const endTime = new Date();
-          const duration = pomodoroSettings.workTime;
-          const newSitting: Sitting = { 
-            startTime: new Date(endTime.getTime() - duration * 1000),
-            endTime: endTime,
-            duration 
-          };
-          setSittings(prev => [...prev, newSitting]);
-          setTotalSittingTime(prev => prev + duration);
-          saveSittingToDatabase(newSitting);
-          startBreakTimer();
-          return 0;
-        }
-        return prevTime - 1;
-      });
-    }, 1000);
+      const now = Date.now();
+      const remaining = Math.max(0, endTime - now);
+      setPomodoroTime(Math.ceil(remaining / 1000));
+      
+      if (remaining <= 0) {
+        clearInterval(timer);
+        const actualDuration = Math.floor((now - startTime) / 1000);
+        const newSitting: Sitting = { 
+          startTime: new Date(startTime),
+          endTime: new Date(now),
+          duration: actualDuration
+        };
+        setSittings(prev => [...prev, newSitting]);
+        setTotalSittingTime(prev => prev + actualDuration);
+        saveSittingToDatabase(newSitting);
+        startBreakTimer();
+      }
+    }, 100); // Update more frequently for smoother countdown
+    
     setPomodoroTimer(timer);
   };
 
   const startBreakTimer = () => {
-    setPomodoroTime(pomodoroSettings.breakTime);
+    const breakTime = pomodoroSettings.breakTime;
+    setPomodoroTime(breakTime);
     setPomodoroSettings(prev => ({ ...prev, isBreak: true }));
     if (pomodoroTimer) clearInterval(pomodoroTimer);
+    const startTime = Date.now();
+    const endTime = startTime + breakTime * 1000;
+    
     const timer = setInterval(() => {
-      setPomodoroTime((prevTime) => {
-        if (prevTime <= 1) {
-          clearInterval(timer);
-          startWorkTimer();
-          return 0;
-        }
-        return prevTime - 1;
-      });
-    }, 1000);
+      const now = Date.now();
+      const remaining = Math.max(0, endTime - now);
+      setPomodoroTime(Math.ceil(remaining / 1000));
+      
+      if (remaining <= 0) {
+        clearInterval(timer);
+        const actualDuration = Math.floor((now - startTime) / 1000);
+        console.log(`Break time completed: ${actualDuration} seconds`);
+        startWorkTimer();
+      }
+    }, 100); // Update more frequently for smoother countdown
+    
     setPomodoroTimer(timer);
   };
 
@@ -575,17 +586,34 @@ const Task: React.FC<TaskProps> = ({ task, members, onUpdate, onDelete, onAddSub
   };
 
   const stopWork = () => {
-    if (workStartTime) {
-      const endTime = new Date();
-      const duration = Math.floor((endTime.getTime() - workStartTime.getTime()) / 1000);
-      const newSitting: Sitting = { 
-        startTime: workStartTime,
-        endTime: endTime,
-        duration 
-      };
-      setSittings(prev => [...prev, newSitting]);
-      setTotalSittingTime(prev => prev + duration);
-      saveSitting(task.id, newSitting);
+    if (workStartTime && isWorking) {
+      const endTime = Date.now();
+      let duration: number;
+      if (isUsingPomodoro && !pomodoroSettings.isBreak) {
+        // For Pomodoro, only save the time of the current work session
+        duration = Math.floor((endTime - workStartTime.getTime()) / 1000);
+        // Only save if the duration is significant
+        if (duration > 1) {
+          const newSitting: Sitting = { 
+            startTime: new Date(workStartTime),
+            endTime: new Date(endTime),
+            duration 
+          };
+          setSittings(prev => [...prev, newSitting]);
+          setTotalSittingTime(prev => prev + duration);
+          saveSitting(task.id, newSitting);
+        }
+      } else if (!isUsingPomodoro) {
+        duration = Math.floor((endTime - workStartTime.getTime()) / 1000);
+        const newSitting: Sitting = { 
+          startTime: new Date(workStartTime),
+          endTime: new Date(endTime),
+          duration 
+        };
+        setSittings(prev => [...prev, newSitting]);
+        setTotalSittingTime(prev => prev + duration);
+        saveSitting(task.id, newSitting);
+      }
     }
     setIsWorking(false);
     setWorkStartTime(null);
@@ -593,8 +621,14 @@ const Task: React.FC<TaskProps> = ({ task, members, onUpdate, onDelete, onAddSub
     setIsUsingPomodoro(false);
     setPomodoroTime(pomodoroSettings.workTime);
     setPomodoroSettings(prev => ({ ...prev, isBreak: false }));
-    if (pomodoroTimer) clearInterval(pomodoroTimer);
-    if (sittingTimerRef.current) clearInterval(sittingTimerRef.current);
+    if (pomodoroTimer) {
+      clearInterval(pomodoroTimer);
+      setPomodoroTimer(null);
+    }
+    if (sittingTimerRef.current) {
+      clearInterval(sittingTimerRef.current);
+      sittingTimerRef.current = null;
+    }
   };
 
   const formatTime = (time: number) => {

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { LogOut, Plus } from 'lucide-react'
@@ -56,13 +56,17 @@ export default function ProductivityApp() {
   const [isLoading, setIsLoading] = useState(true)
   const [isTasksLoading, setIsTasksLoading] = useState(true)
 
+  const sortTasksByRecent = useCallback((taskList: ApiTask[]): ApiTask[] => {
+    return [...taskList].sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+  }, []);
+
+
   useEffect(() => {
     const loadData = async () => {
       if (user) {
         setIsTasksLoading(true);
         try {
           const [fetchedTasks, fetchedUsers] = await Promise.all([fetchTasks(), getUsers()]);
-          console.log('Fetched tasks:', fetchedTasks);
           setTasks(sortTasksByRecent(fetchedTasks as ApiTask[]));
           setMembers(fetchedUsers.map((user: { name: string }) => user.name));
         } catch (error) {
@@ -75,13 +79,9 @@ export default function ProductivityApp() {
     };
 
     loadData();
-  }, [user]);
+  }, [user, sortTasksByRecent]);
 
-  const sortTasksByRecent = (taskList: ApiTask[]): ApiTask[] => {
-    return taskList.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
-  };
-
-  const handleUpdateTask = async (updatedTask: ApiTask) => {
+  const handleUpdateTask = useCallback((updatedTask: ApiTask) => {
     setTasks(prevTasks => {
       const updateTaskRecursively = (tasks: ApiTask[]): ApiTask[] => {
         return tasks.map(task => {
@@ -98,59 +98,33 @@ export default function ProductivityApp() {
       };
       return sortTasksByRecent(updateTaskRecursively(prevTasks));
     });
+  }, [sortTasksByRecent]);
 
-    // Update the current tab if the task status has changed
-    if (updatedTask.status !== currentTab && currentTab !== 'all') {
-      setCurrentTab(updatedTask.status);
-    }
-  }
-
-  const handleDeleteTask = async (taskId: number) => {
+  const handleDeleteTask = useCallback(async (taskId: number) => {
     try {
       const result = await apiDeleteTask(taskId);
       if (result.success) {
-        setTasks(prevTasks => {
-          const removeTask = (tasks: ApiTask[]): ApiTask[] => {
-            return tasks.filter(task => {
-              if (task.id === taskId) {
-                return false;
-              }
-              if (task.subtasks && task.subtasks.length > 0) {
-                task.subtasks = removeTask(task.subtasks);
-              }
-              return true;
-            });
-          };
-          return removeTask(prevTasks);
-        });
+        setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
       } else {
         console.error('Failed to delete task:', result.message);
       }
     } catch (error) {
       console.error('Error deleting task:', error);
     }
-  }
+  }, []);
 
-  // Remove or comment out these unused functions
-  // const addTask = async () => { ... }
-  // const addSubtask = async (parentTaskId: number, subtaskData: Partial<Task>) => { ... }
-  // const addMember = (newMember: string) => { ... }
-  // const removeMember = (memberToRemove: string) => { ... }
+  const handleTaskCreated = useCallback((newTask: ApiTask) => {
+    setTasks(prevTasks => sortTasksByRecent([...prevTasks, newTask]));
+    setShowCreateTaskForm(false);
+  }, [sortTasksByRecent]);
 
-  const handleTaskCreated = (newTask: ApiTask) => {
-    setTasks(prevTasks => [
-      ...prevTasks,
-      newTask
-    ])
-    setShowCreateTaskForm(false)
-  }
-
-  const handleAddSubtask = async (parentTaskId: number, subtaskData: Partial<ApiTask>) => {
+  const handleAddSubtask = useCallback(async (parentTaskId: number, subtaskData: Partial<ApiTask>) => {
+    if (!user) return;
     try {
       const newSubtask = await createTask({
         ...subtaskData,
         parent_task_id: parentTaskId,
-        user_id: user!.user.id,
+        user_id: user.user.id,
       });
 
       setTasks(prevTasks => {
@@ -171,14 +145,14 @@ export default function ProductivityApp() {
           });
         };
 
-        return updateSubtasks(prevTasks);
+        return sortTasksByRecent(updateSubtasks(prevTasks));
       });
     } catch (error) {
       console.error('Error adding subtask:', error);
     }
-  };
+  }, [user, sortTasksByRecent]);
 
-  const sortAndGroupTasks = (tasks: ApiTask[]): { [key: string]: ApiTask[] } => {
+  const sortAndGroupTasks = useCallback((tasks: ApiTask[]): { [key: string]: ApiTask[] } => {
     const sortedTasks = tasks.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     const groupedTasks: { [key: string]: ApiTask[] } = {};
 
@@ -205,9 +179,16 @@ export default function ProductivityApp() {
     });
 
     return groupedTasks;
-  };
+  }, []);
 
-  const renderTaskList = (tasks: ApiTask[]) => {
+  const memoizedMembers = useMemo(() => members, [members]);
+  const memoizedCurrentUser = useMemo(() => user ? {
+    id: user.user.id,
+    name: user.user.name,
+    role: user.user.role
+  } : null, [user]);
+
+  const renderTaskList = useCallback((tasks: ApiTask[]) => {
     if (isTasksLoading) {
       return <TaskLoader />;
     }
@@ -221,27 +202,35 @@ export default function ProductivityApp() {
             <h3 className="text-xl font-semibold mb-4">{groupName}</h3>
             <AnimatePresence>
               {groupTasks.map(task => (
-                <Task
-                  key={task.id}
-                  task={task}
-                  members={members}
-                  onUpdate={handleUpdateTask}
-                  onDelete={handleDeleteTask}
-                  onAddSubtask={handleAddSubtask}
-                  currentUser={{
-                    id: user!.user.id,
-                    name: user!.user.name,
-                    role: user!.user.role
-                  }}
-                  depth={0}
-                />
+                memoizedCurrentUser && (
+                  <Task
+                    key={task.id}
+                    task={task}
+                    members={memoizedMembers}
+                    onUpdate={handleUpdateTask}
+                    onDelete={handleDeleteTask}
+                    onAddSubtask={handleAddSubtask}
+                    currentUser={memoizedCurrentUser}
+                    depth={0}
+                  />
+                )
               ))}
             </AnimatePresence>
           </div>
         ))}
       </>
     );
-  };
+  }, [isTasksLoading, memoizedMembers, handleUpdateTask, handleDeleteTask, handleAddSubtask, memoizedCurrentUser, sortAndGroupTasks]);
+
+  const userTasks = useMemo(() => {
+    if (!user) return [];
+    return user.user.role === 'admin' 
+      ? tasks 
+      : tasks.filter(task => 
+          task.assigned_user_name === user.user.name || 
+          task.subtasks?.some(subtask => subtask.assigned_user_name === user.user.name)
+        );
+  }, [user, tasks]);
 
   if (isLoading) {
     return <Loader />;
@@ -251,20 +240,13 @@ export default function ProductivityApp() {
     return <Login />
   }
 
-  const userTasks = user.user.role === 'admin' 
-    ? tasks 
-    : tasks.filter(task => 
-        task.assigned_user_name === user.user.name || 
-        task.subtasks?.some(subtask => subtask.assigned_user_name === user.user.name)
-      );
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100 p-2 sm:p-4 md:p-6 lg:p-8">
       <div className="max-w-6xl mx-auto">
         <div className="flex flex-col sm:flex-row justify-between items-center mb-4 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2 sm:mb-0">Task Management</h1>
           <div className="flex items-center space-x-2 sm:space-x-4">
-            <span className="text-sm sm:text-base text-gray-600">Welcome, {user!.user.name} ({user!.user.role})</span>
+            <span className="text-sm sm:text-base text-gray-600">Welcome, {user.user.name} ({user.user.role})</span>
             <Button onClick={logout} variant="outline" size="sm">
               <LogOut className="mr-2 h-4 w-4" /> Logout
             </Button>
@@ -277,7 +259,7 @@ export default function ProductivityApp() {
           </CardHeader>
           <CardContent>
             <div className="flex justify-between items-center mb-4 sm:mb-6">
-              {user!.user.role === 'admin' && (
+              {user.user.role === 'admin' && (
                 <Button onClick={() => setShowCreateTaskForm(true)} size="sm">
                   <Plus className="mr-2 h-4 w-4" /> Add New Task
                 </Button>
