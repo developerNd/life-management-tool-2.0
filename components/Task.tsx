@@ -589,21 +589,24 @@ const Task: React.FC<TaskProps> = ({ task, members, onUpdate, onDelete, onAddSub
     if (workStartTime && isWorking) {
       const endTime = Date.now();
       let duration: number;
-      if (isUsingPomodoro && !pomodoroSettings.isBreak) {
-        // For Pomodoro, only save the time of the current work session
-        duration = Math.floor((endTime - workStartTime.getTime()) / 1000);
-        // Only save if the duration is significant
-        if (duration > 1) {
-          const newSitting: Sitting = { 
-            startTime: new Date(workStartTime),
-            endTime: new Date(endTime),
-            duration 
-          };
-          setSittings(prev => [...prev, newSitting]);
-          setTotalSittingTime(prev => prev + duration);
-          saveSitting(task.id, newSitting);
+      if (isUsingPomodoro) {
+        if (!pomodoroSettings.isBreak) {
+          // For Pomodoro, only save the time of the current work session
+          const elapsedTime = pomodoroSettings.workTime - pomodoroTime;
+          duration = Math.min(elapsedTime, pomodoroSettings.workTime);
+          // Only save if the duration is significant
+          if (duration > 1) {
+            const newSitting: Sitting = { 
+              startTime: new Date(endTime - duration * 1000),
+              endTime: new Date(endTime),
+              duration 
+            };
+            setSittings(prev => [...prev, newSitting]);
+            setTotalSittingTime(prev => prev + duration);
+            saveSitting(task.id, newSitting);
+          }
         }
-      } else if (!isUsingPomodoro) {
+      } else {
         duration = Math.floor((endTime - workStartTime.getTime()) / 1000);
         const newSitting: Sitting = { 
           startTime: new Date(workStartTime),
