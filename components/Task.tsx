@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Clock, User as UserIcon, ChevronDown, ChevronRight, Plus, Check, X, RotateCcw, CheckCircle2, Trash2, Play, Pause, Settings } from 'lucide-react';
@@ -66,7 +66,7 @@ const Task: React.FC<TaskProps> = ({ task, members, onUpdate, onDelete, onAddSub
   const isCreator = task.user_id === currentUser.id;
   const canEdit = (isCreator) && task.status === 'in_progress';
 
-  const isSmallScreen = useMediaQuery({ maxWidth: 640 });
+  // const isSmallScreen = useMediaQuery({ maxWidth: 640 });
 
   useEffect(() => {
     setLocalTask(task);
