@@ -919,7 +919,7 @@ const Task: React.FC<TaskProps> = ({ task, members, onUpdate, onDelete, onAddSub
                 <div className="mt-4 space-y-2">
                   <h4 className="text-sm font-semibold text-gray-700">Work Sessions</h4>
                   {!isWorking ? (
-                    <div className="flex space-x-2">
+                    <div className="flex flex-wrap">
                       <Button onClick={() => startWork(false)} size="sm" variant="outline">
                         <Play className="mr-1 h-4 w-4" /> Start Work
                       </Button>
