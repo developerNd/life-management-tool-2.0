@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Clock, User as UserIcon, ChevronDown, ChevronRight, Plus, Check, X, RotateCcw, CheckCircle2, Trash2, Play, Pause, Settings } from 'lucide-react';
@@ -9,6 +9,7 @@ import CreateTask from './CreateTask';
 import { requestApproval, approveTask, rejectTask, markTaskCompleted, deleteTask, updateTask as apiUpdateTask, revertTaskToInProgress } from '../utils/api';
 import { format, parseISO, addMinutes, differenceInSeconds, isPast } from 'date-fns';
 import { savePomodoroSettings, saveSitting, getSittings, PomodoroSettings, Sitting, getPomodoroSettings } from '@/utils/api';
+import { useMediaQuery } from 'react-responsive';
 
 interface TaskProps {
   task: ApiTask;
@@ -64,6 +65,8 @@ const Task: React.FC<TaskProps> = ({ task, members, onUpdate, onDelete, onAddSub
 
   const isCreator = task.user_id === currentUser.id;
   const canEdit = (isCreator) && task.status === 'in_progress';
+
+  const isSmallScreen = useMediaQuery({ maxWidth: 640 });
 
   useEffect(() => {
     setLocalTask(task);
@@ -247,6 +250,7 @@ const Task: React.FC<TaskProps> = ({ task, members, onUpdate, onDelete, onAddSub
     );
   };
 
+  // Revert the renderSubtasks function to its original version
   const renderSubtasks = (subtasks: ApiTask[], depth: number = 1) => {
     return subtasks.map(subtask => (
       <div key={subtask.id} className={depth === 1 ? 'pl-8' : ''}>
@@ -1036,7 +1040,7 @@ const Task: React.FC<TaskProps> = ({ task, members, onUpdate, onDelete, onAddSub
               {depth === 0 && (
                 <div className="absolute top-0 bottom-0 left-3 w-px bg-gray-300"></div>
               )}
-              {renderSubtasks(localTask.subtasks, depth + 1)}
+              {renderSubtasks(localTask.subtasks, depth + 1) }
             </div>
           </motion.div>
         )}

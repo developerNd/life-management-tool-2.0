@@ -149,12 +149,12 @@ const CreateTask: React.FC<CreateTaskProps> = ({ parentTaskId, onTaskCreated, on
   };
 
   return (
-    <Card className="w-full max-w-2xl mx-auto">
+    <Card className="w-full max-w-3xl mx-auto">
       <CardHeader>
         <CardTitle className="text-2xl font-bold text-center">Create New Task</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="title">Task Title</Label>
             <Input
@@ -164,6 +164,7 @@ const CreateTask: React.FC<CreateTaskProps> = ({ parentTaskId, onTaskCreated, on
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Enter task title"
               required
+              className="w-full"
             />
             {errors.title && <p className="text-red-500 text-sm">{errors.title}</p>}
           </div>
@@ -175,14 +176,15 @@ const CreateTask: React.FC<CreateTaskProps> = ({ parentTaskId, onTaskCreated, on
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Enter task description"
               required
+              className="w-full"
             />
             {errors.description && <p className="text-red-500 text-sm">{errors.description}</p>}
           </div>
-          <div className="flex space-x-4">
-            <div className="flex-1 space-y-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
               <Label htmlFor="estimatedTime">Estimated Time</Label>
               <div className="flex items-center space-x-2">
-                <Clock className="h-4 w-4 text-gray-500" />
+                <Clock className="h-4 w-4 text-gray-500 flex-shrink-0" />
                 <Input
                   id="estimatedTime"
                   type="number"
@@ -190,7 +192,7 @@ const CreateTask: React.FC<CreateTaskProps> = ({ parentTaskId, onTaskCreated, on
                   onChange={(e) => setEstimatedTime(parseInt(e.target.value) || 0)}
                   placeholder="Estimated Time"
                   required
-                  className="flex-1"
+                  className="flex-grow"
                 />
                 <Select onValueChange={(value: 'minutes' | 'days') => setTimeUnit(value)} value={timeUnit}>
                   <SelectTrigger className="w-[100px]">
@@ -204,10 +206,10 @@ const CreateTask: React.FC<CreateTaskProps> = ({ parentTaskId, onTaskCreated, on
               </div>
               {errors.estimatedTime && <p className="text-red-500 text-sm">{errors.estimatedTime}</p>}
             </div>
-            <div className="flex-1 space-y-2">
+            <div className="space-y-2">
               <Label htmlFor="assignedUser">Assign To</Label>
               <div className="flex items-center space-x-2">
-                <UserIcon className="h-4 w-4 text-gray-500" />
+                <UserIcon className="h-4 w-4 text-gray-500 flex-shrink-0" />
                 <Select onValueChange={setAssignedUserName} required>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Assign to" />
@@ -224,65 +226,65 @@ const CreateTask: React.FC<CreateTaskProps> = ({ parentTaskId, onTaskCreated, on
               {errors.assignedUserName && <p className="text-red-500 text-sm">{errors.assignedUserName}</p>}
             </div>
           </div>
-          <div className="flex space-x-4">
-            <div className="flex-1 space-y-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
               <Label htmlFor="startDate">Start Date</Label>
               <div className="flex items-center space-x-2">
-                <Calendar className="h-4 w-4 text-gray-500" />
+                <Calendar className="h-4 w-4 text-gray-500 flex-shrink-0" />
                 <Input
                   id="startDate"
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
                   required
-                  className="flex-1"
+                  className="flex-grow"
                 />
               </div>
               {errors.startDate && <p className="text-red-500 text-sm">{errors.startDate}</p>}
             </div>
-            <div className="flex-1 space-y-2">
+            <div className="space-y-2">
               <Label htmlFor="startTime">Start Time</Label>
               <div className="flex items-center space-x-2">
-                <Clock className="h-4 w-4 text-gray-500" />
+                <Clock className="h-4 w-4 text-gray-500 flex-shrink-0" />
                 <Input
                   id="startTime"
                   type="time"
                   value={startTime}
                   onChange={(e) => setStartTime(e.target.value)}
                   required
-                  className="flex-1"
+                  className="flex-grow"
                 />
               </div>
               {errors.startTime && <p className="text-red-500 text-sm">{errors.startTime}</p>}
             </div>
           </div>
-          <div className="flex space-x-4">
-            <div className="flex-1 space-y-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
               <Label htmlFor="deadlineDate">Deadline Date</Label>
               <div className="flex items-center space-x-2">
-                <Calendar className="h-4 w-4 text-gray-500" />
+                <Calendar className="h-4 w-4 text-gray-500 flex-shrink-0" />
                 <Input
                   id="deadlineDate"
                   type="date"
                   value={deadlineDate}
                   onChange={(e) => setDeadlineDate(e.target.value)}
                   required
-                  className="flex-1"
+                  className="flex-grow"
                 />
               </div>
               {errors.deadlineDate && <p className="text-red-500 text-sm">{errors.deadlineDate}</p>}
             </div>
-            <div className="flex-1 space-y-2">
+            <div className="space-y-2">
               <Label htmlFor="deadlineTime">Deadline Time</Label>
               <div className="flex items-center space-x-2">
-                <Clock className="h-4 w-4 text-gray-500" />
+                <Clock className="h-4 w-4 text-gray-500 flex-shrink-0" />
                 <Input
                   id="deadlineTime"
                   type="time"
                   value={deadlineTime}
                   onChange={(e) => setDeadlineTime(e.target.value)}
                   required
-                  className="flex-1"
+                  className="flex-grow"
                 />
               </div>
               {errors.deadlineTime && <p className="text-red-500 text-sm">{errors.deadlineTime}</p>}
