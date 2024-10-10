@@ -9,7 +9,7 @@ import CreateTask from './CreateTask';
 import { requestApproval, approveTask, rejectTask, markTaskCompleted, deleteTask, updateTask as apiUpdateTask, revertTaskToInProgress } from '../utils/api';
 import { format, parseISO, addMinutes, differenceInSeconds, isPast } from 'date-fns';
 import { savePomodoroSettings, saveSitting, getSittings, PomodoroSettings, Sitting, getPomodoroSettings } from '@/utils/api';
-import { useMediaQuery } from 'react-responsive';
+// import { useMediaQuery } from 'react-responsive';
 
 interface TaskProps {
   task: ApiTask;
